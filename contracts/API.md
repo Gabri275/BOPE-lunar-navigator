@@ -18,7 +18,7 @@ python -m venv .venv
 - **Interactive docs with every parameter and a "try it" button: `http://localhost:8000/docs`**
 - OpenAPI description (for generating TypeScript types): `http://localhost:8000/openapi.json`
 - CORS is open, so a dev server on another port can call it. All endpoints are `GET` and read-only.
-- Errors: `422` with `{"detail": "..."}` for bad input, `503` if the kernels (or, for `/api/horizon`, the maps) are missing.
+- Errors: `422` with `{"detail": "..."}` for bad input, `503` if the kernels are missing.
 
 **Terrain.** With the LOLA maps on disk (`data/MAPS.md`) every result uses the real skyline, slope and elevation
 (`horizon_source: "lola-terrain"`). Without the maps, or with `use_terrain=false`, the API still works with a smooth
@@ -69,7 +69,7 @@ Parameter definitions, formulas and sources: `docs/PARAMETERS.md`.
 | `GET /api/sites` | – | `sites.schema.json`: the 31 known landing sites (`data/SITES.md`), with `elevation_m`, `slope_deg` when the maps are present. Same content as the static file `data/processed/sites.json` |
 | `GET /api/scene` | `step_s` (600) | `scene.schema.json`: sub-solar / sub-Earth points, Earth phase |
 | `GET /api/ephemeris` | site, model inputs, `step_s` (600) | `ephemeris.schema.json` with all optional fields; `*_visible_frac` include the terrain |
-| `GET /api/horizon` | site, `obs_height_m` | `horizon.schema.json`: the terrain skyline, 720 azimuths (0.5°), out to 200 km |
+| `GET /api/horizon` | site, `obs_height_m` | `horizon.schema.json`: the terrain skyline, 720 azimuths (0.5°), out to 200 km. Without the maps: the smooth-sphere horizon, `dem: null`, `horizon_source: "smooth-sphere"` |
 | `GET /api/metrics` | site, model inputs, `calc_step_s` (60) | `metrics.schema.json` incl. Sun/Earth windows |
 | `GET /api/evaluate` | site, model inputs, weights, limits, `calc_step_s` (60) | all site parameters + requirements check + score (below) |
 | `GET /api/area` | site, model inputs, weights, limits, `radius_km` (5), `spacing_km` (radius/10), `calc_step_s` (600) | score map of a disc around the site (below) |

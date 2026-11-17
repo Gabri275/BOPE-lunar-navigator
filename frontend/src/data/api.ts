@@ -120,6 +120,7 @@ export type Ephemeris = z.infer<typeof Ephemeris>
 // /api/horizon: the terrain skyline seen from the place, elevation of the skyline at every azimuth (horizon.schema.json).
 export const Horizon = z.object({
   contract_version: z.string(), observer_height_m: z.number(), azimuth_deg: nums, horizon_elev_deg: nums,
+  horizon_source: z.string().optional(), // 'smooth-sphere' when the server has no terrain maps
 })
 export type Horizon = z.infer<typeof Horizon>
 

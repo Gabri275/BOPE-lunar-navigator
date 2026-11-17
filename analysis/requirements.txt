@@ -6,6 +6,8 @@ numpy
 spiceypy
 fastapi
 uvicorn[standard]
+rasterio      # reads the LOLA GeoTIFF maps (terrain skyline, slope, altitude)
+scipy         # nearest-neighbour lookup of the Diviner polar temperatures
 jsonschema
 referencing
 # tests
