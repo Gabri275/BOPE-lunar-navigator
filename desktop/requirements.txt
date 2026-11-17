@@ -1,0 +1,4 @@
+# Desktop app (Windows): the analysis server, its window and the packager. Installed by desktop/build.py into desktop/.venv.
+-r ../analysis/requirements.txt
+pywebview>=5      # native window (Microsoft Edge WebView2, part of Windows 10 and 11)
+pyinstaller>=6    # builds the single LunarNavigator.exe
