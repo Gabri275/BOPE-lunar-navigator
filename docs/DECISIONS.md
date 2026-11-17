@@ -263,3 +263,20 @@ Short dated entries: decision, why, alternatives rejected. This becomes the "met
   no default warning band: the user types their own (page "Landing criteria" says so).
 - Mission setup sub-headings (Coordinates, Mission type, Minimum requirements, Stay and hardware, ...) now use the same
   small uppercase title as the Results pane, instead of a larger mixed-case bold heading. Font family unchanged (Archivo).
+
+## 2026-11-17 · Windows desktop app (portfolio repository)
+- `desktop/app.py` + `desktop/build.py` make one `LunarNavigator.exe` (PyInstaller, one file, about 230 MB): a native
+  window (pywebview on Microsoft Edge WebView2) over a local server on 127.0.0.1 that serves the built interface and the
+  analysis API on the same port (`VITE_API_BASE=/api`). The SPICE kernels (45 MB) are packed in, so the Sun and the Earth
+  work offline from the first start. Rejected: Electron/Tauri (a second runtime next to Python, larger or needs Rust) and a
+  launcher that opens the browser (the user asked for a real program window).
+- The maps (up to 13.7 GB) are not packed: on first start the user picks an existing folder, the Base set (3.1 GB) or the
+  Complete set (13.7 GB) downloaded from NASA's archives with pause and resume, or no maps. Settings, maps and log live in
+  `%LOCALAPPDATA%\BOPE Lunar Navigator`; the Maps menu changes the choice later.
+- Without maps the API now answers `/api/horizon` with the smooth-sphere horizon (`dem: null`, `horizon_source`), the same
+  horizon every other endpoint already used, so the surface view works too; it says "Smooth-Moon horizon" in orange.
+  `horizon.schema.json` accepts that (backwards compatible).
+- `analysis.download_maps` now covers every map the API reads: the Diviner GCP temperature tables (18 × 156 MB) and the
+  65° shadow maps were added (URLs and sizes checked 2026-11-17); `config.MAP_SETS` defines Base and Complete.
+- `analysis/requirements.txt` gained `rasterio` and `scipy`: the terrain and the polar temperatures need them, and a
+  source install following the README would otherwise run without terrain.

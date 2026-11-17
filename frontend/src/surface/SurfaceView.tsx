@@ -88,7 +88,9 @@ export function SurfaceView({ dayUtc }: { dayUtc: string }) {
       <header className="surface-top">
         <h2>Surface view <Help topic="surface-view" /></h2>
         {point && <span className="surface-where">{fmtCoords(point.lat, point.lon)}</span>}
-        <span className="surface-hint">Drag to look around · wheel to zoom</span>
+        {h?.horizon_source === 'smooth-sphere'
+          ? <span className="surface-hint smooth">Smooth-Moon horizon: no terrain maps on this computer</span>
+          : <span className="surface-hint">Drag to look around · wheel to zoom</span>}
         <button type="button" className="surface-close" onClick={() => setSurfaceOpen(false)} aria-label="Close the surface view">Close ✕</button>
       </header>
 

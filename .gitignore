@@ -15,6 +15,12 @@ __pycache__/
 # node / frontend
 node_modules/
 dist/
+
+# desktop app build (desktop/build.py)
+desktop/.venv/
+desktop/build/
+desktop/dist/
+*.spec
 *.log
 
 # os / editors

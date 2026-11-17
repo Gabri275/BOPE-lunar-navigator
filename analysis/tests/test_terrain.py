@@ -134,6 +134,17 @@ def test_api_horizon_matches_contract():
     assert len(doc["azimuth_deg"]) == 720 == len(doc["horizon_elev_deg"]) and doc["dem"]["max_range_km"] == 200.0
 
 
+def test_api_horizon_without_maps_is_the_smooth_sphere(monkeypatch):
+    """No LOLA maps (desktop app without downloads): the skyline is the smooth-sphere dip, still a valid document."""
+    monkeypatch.setattr(horizon, "terrain_available", lambda: False)
+    r = client.get("/api/horizon", params={"lat_deg": -89.5, "lon_deg": -135.0, "obs_height_m": 2})
+    assert r.status_code == 200, r.text
+    doc = r.json()
+    assert_valid(doc, "horizon.schema.json")
+    assert doc["dem"] is None and doc["horizon_source"] == "smooth-sphere" and len(doc["horizon_elev_deg"]) == 720
+    assert set(doc["horizon_elev_deg"]) == {round(-horizon.dip_deg(2.0), 3)}
+
+
 @needs_slope_map
 def test_api_evaluate_with_terrain_and_slope_requirement():
     site = {"lat_deg": -89.5, "lon_deg": -135.0, "start_utc": "2026-11-15T00:00:00Z"}

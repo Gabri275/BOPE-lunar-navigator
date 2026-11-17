@@ -1,10 +1,12 @@
 """All tunable parameters and constants in one place. Every constant states its source."""
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-KERNEL_DIR = REPO / "data" / "raw" / "kernel"
+# Data folders. The desktop app (desktop/) points them elsewhere with these environment variables.
+KERNEL_DIR = Path(os.environ.get("BOPE_KERNEL_DIR") or REPO / "data" / "raw" / "kernel")
 
 # SPICE kernels: file name -> path under the NAIF generic kernels server (URLs checked 2026-11-14).
 NAIF_BASE_URL = "https://naif.jpl.nasa.gov/pub/naif/generic_kernels"
@@ -18,7 +20,7 @@ KERNELS = {
 
 # LOLA / LROC maps: key -> (path under data/raw/maps/, download URL or None, size in bytes).
 # URLs and sizes checked 2026-11-14 (HTTP 200, sizes equal to the files AERO downloaded). Details: data/MAPS.md.
-MAPS_DIR = REPO / "data" / "raw" / "maps"
+MAPS_DIR = Path(os.environ.get("BOPE_MAPS_DIR") or REPO / "data" / "raw" / "maps")
 _PGDA = "https://pgda.gsfc.nasa.gov/data"
 _GDR = "https://imbrium.mit.edu/DATA/LOLA_GDR"
 MAPS = {
@@ -45,6 +47,27 @@ MAPS = {
                     1_651_907_520),
     # Background image only (FE). No direct file URL: download by hand from https://data.lroc.im-ldi.com/lroc/view_rdr/WAC_ROI_SOUTH_SUMMER
     "wac_south":     ("imagery/WAC_ROI_SOUTH_SUMMER_064P.PYR.TIF", None, 50_472_972),
+}
+# Diviner Global Cumulative Product (Williams et al. 2017): measured temperatures, 18 bands of 10 deg latitude
+# (surface temperature at a place and the temperature layers). URLs and sizes checked 2026-11-17.
+_GCP = "https://pds-geosciences.wustl.edu/lro/urn-nasa-pds-lro_diviner_derived1/data_derived_gcp"
+GCP_BANDS = [f"{a:02d}s{a - 10:02d}s" for a in range(90, 0, -10)] + [f"{a:02d}n{a + 10:02d}n" for a in range(0, 90, 10)]
+MAPS.update({f"diviner_gcp_{b}": (f"temperature/gcp/global_cumul_avg_cyl_{b}_002.tab",
+                                  f"{_GCP}/global_cumul_avg_cyl_{b}_002.tab", 156_211_313) for b in GCP_BANDS})
+# Permanently shadowed regions poleward of 65 deg (Mazarico et al. 2011): only to rebuild that map layer.
+_LPSR = "https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG"
+for _pole, _lbl in (("N", 3_914), ("S", 3_917)):
+    MAPS[f"psr_65{_pole.lower()}"] = (f"psr/LPSR_65{_pole}_240M_201608.IMG", f"{_LPSR}/LPSR_65{_pole}_240M_201608.IMG", 82_432_800)
+    MAPS[f"psr_65{_pole.lower()}_label"] = (f"psr/LPSR_65{_pole}_240M_201608.LBL", f"{_LPSR}/LPSR_65{_pole}_240M_201608.LBL", _lbl)
+
+# Download sets (analysis/download_maps.py and the desktop app). "base": the terrain (skyline, slope, altitude) and
+# NASA's polar visibility and shadow maps, about 3 GB. "complete" adds the 5 m south-pole map and the Diviner
+# temperature, rock abundance and H-parameter maps, about 13.5 GB. Maps without a download URL are never in a set.
+MAPS_COMPLETE_ONLY = {"dem_87s_5m", "diviner_prp_south", "rock_abundance", "h_parameter",
+                      *(f"diviner_gcp_{b}" for b in GCP_BANDS), "psr_65n", "psr_65n_label", "psr_65s", "psr_65s_label"}
+MAP_SETS = {
+    "base": [k for k, v in MAPS.items() if v[1] and k not in MAPS_COMPLETE_ONLY],
+    "complete": [k for k, v in MAPS.items() if v[1]],
 }
 
 FRAME = "MOON_ME"         # Mean Earth / Polar Axis, same frame as the LOLA maps

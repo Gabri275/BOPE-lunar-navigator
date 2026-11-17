@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Terrain maps · Lunar Landing Site Navigator</title>
+<style>
+  /* Same look as the navigator (frontend/src/styles.css): one black sky, white type, amber = Sun, blue = Earth. */
+  @font-face { font-family: 'Archivo Variable'; src: url('/setup/static/archivo.woff2') format('woff2-variations');
+    font-weight: 100 900; font-stretch: 62% 125%; font-display: block; }
+  :root { --text: #f0f0fa; --text-2: #9a9ca6; --rule: #2e3036; --raised: #16171b; --sun: #f0b254; --earth: #6fb1e6;
+    --ok: #4fbf9a; --warn: #f08a4b; --bad: #ff5d5d; --font: 'Archivo Variable', system-ui, sans-serif; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: #000; color: var(--text); font: 400 16px/1.5 var(--font); }
+  main { max-width: 980px; margin: 0 auto; padding: 48px 32px 64px; }
+  .eyebrow { margin: 0; font-size: 13px; font-weight: 600; font-stretch: 125%; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-2); }
+  h1 { margin: 10px 0 0; font-size: 34px; line-height: 1.15; font-weight: 700; font-stretch: 125%; letter-spacing: 0.08em; text-transform: uppercase; }
+  .intro { margin: 18px 0 0; max-width: 70ch; color: var(--text-2); font-size: 17px; }
+  .intro b { color: var(--text); font-weight: 600; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 32px; }
+  .card { display: flex; flex-direction: column; gap: 10px; padding: 22px 22px 20px; background: var(--raised);
+    border: 1px solid var(--rule); border-radius: 6px; }
+  .card h2 { margin: 0; display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    font-size: 15px; font-weight: 700; font-stretch: 125%; letter-spacing: 0.1em; text-transform: uppercase; }
+  .card h2 .size { font-size: 14px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--sun); white-space: nowrap; }
+  .card p { margin: 0; color: var(--text-2); font-size: 15px; }
+  .card .grow { flex: 1; }
+  .card.recommended { border-color: #5b5f66; }
+  button { font: 600 15px var(--font); color: #000; background: var(--text); border: 1px solid var(--text);
+    border-radius: 4px; padding: 9px 18px; cursor: pointer; align-self: flex-start; }
+  button.ghost { color: var(--text); background: transparent; }
+  button:disabled { opacity: 0.45; cursor: default; }
+  .found { font-size: 14px; color: var(--text); }
+  .found code { font: 13px Consolas, monospace; color: var(--text-2); word-break: break-all; }
+  .tag { display: inline-block; margin-right: 6px; padding: 1px 8px; border-radius: 3px; font-size: 13px; font-weight: 600; }
+  .tag.ok { background: rgba(79,191,154,0.18); color: var(--ok); }
+  .tag.no { background: rgba(240,138,75,0.16); color: var(--warn); }
+  .note { margin-top: 22px; font-size: 14px; color: var(--text-2); }
+  .note code { font: 13px Consolas, monospace; }
+  .error { color: var(--bad); font-size: 14px; }
+  #progress { display: none; margin-top: 32px; padding: 26px; background: var(--raised); border: 1px solid var(--rule); border-radius: 6px; }
+  #progress h2 { margin: 0; font-size: 15px; font-weight: 700; font-stretch: 125%; letter-spacing: 0.1em; text-transform: uppercase; }
+  .bar { height: 10px; margin: 18px 0 10px; background: #000; border: 1px solid var(--rule); border-radius: 5px; overflow: hidden; }
+  .bar span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #3b1f5c, #2a6f97, #2fb39a, #f2e08a); transition: width 0.4s; }
+  .bar.indeterminate span { width: 30%; animation: slide 1.4s ease-in-out infinite; }
+  @keyframes slide { from { margin-left: -30%; } to { margin-left: 100%; } }
+  .stats { display: flex; justify-content: space-between; gap: 16px; font-size: 15px; }
+  .stats .file { color: var(--text-2); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .actions { display: flex; gap: 12px; margin-top: 20px; }
+  @media (max-width: 760px) { .cards { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">Lunar Landing Site Navigator</p>
+  <h1>Terrain maps</h1>
+  <p class="intro">The navigator computes the Sun and the Earth for <b>any place and date on the Moon</b> already.
+    NASA's terrain maps add the <b>real skyline</b> (mountains and crater rims that hide the Sun or the Earth), the slope
+    and the surface data. Choose once; you can change it later from the <b>Maps</b> menu.</p>
+
+  <section id="choices">
+    <div class="cards">
+      <div class="card">
+        <h2>Use maps I already have</h2>
+        <p class="grow">Pick the folder with the maps: a maps folder (it contains <code>dem</code>), or a project
+          folder that has <code>data/raw/maps</code>. Nothing is downloaded.</p>
+        <div id="folder-result"></div>
+        <div class="actions" style="margin-top:0">
+          <button class="ghost" id="pick">Choose folder…</button>
+          <button id="use-folder" style="display:none">Use this folder</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Continue without maps</h2>
+        <p class="grow">Everything works, anywhere, but with the horizon of a <b>smooth Moon</b>: no mountains or craters on the
+          skyline, and no slope, temperature or rock data. Near the poles the results are optimistic.</p>
+        <button class="ghost" id="none">Continue without maps</button>
+      </div>
+      <div class="card recommended">
+        <h2>Base <span class="size" id="size-base">3 GB</span></h2>
+        <p class="grow">Real terrain skyline everywhere, slope and altitude, and NASA's long-term Sun and Earth visibility and
+          shadow maps near the south pole.</p>
+        <button data-set="base">Download Base</button>
+      </div>
+      <div class="card">
+        <h2>Complete <span class="size" id="size-complete">13.7 GB</span></h2>
+        <p class="grow">Everything in Base, plus the 5 m terrain around the south pole, surface temperatures, rock abundance and
+          thermal inertia (H-parameter). The full analysis.</p>
+        <button data-set="complete">Download Complete</button>
+      </div>
+    </div>
+    <p class="note" id="where"></p>
+    <p class="error" id="choice-error"></p>
+  </section>
+
+  <section id="progress">
+    <h2 id="phase">Downloading</h2>
+    <div class="bar" id="bar"><span></span></div>
+    <div class="stats"><span id="amount"></span><span id="percent"></span></div>
+    <div class="stats"><span class="file" id="file"></span></div>
+    <p class="error" id="job-error"></p>
+    <div class="actions">
+      <button class="ghost" id="pause">Pause</button>
+      <button id="open" style="display:none">Open the navigator</button>
+      <button class="ghost" id="back" style="display:none">Back</button>
+    </div>
+  </section>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id)
+  const post = (path, body) => fetch('/setup/api/' + path, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body || {}) }).then((r) => r.json())
+  let folder = null, info = null, timer = null
+
+  async function refresh() {
+    info = await fetch('/setup/api/state').then((r) => r.json())
+    $('size-base').textContent = info.sizes.base + ' GB'
+    $('size-complete').textContent = info.sizes.complete + ' GB'
+    $('where').innerHTML = `Downloads go to <code>${info.default_dir}</code> (${info.free_gb} GB free on that disk). ` +
+      'They come from NASA\'s archives and can be paused and resumed.'
+    for (const b of document.querySelectorAll('button[data-set]')) {
+      const need = info.sizes[b.dataset.set]
+      if (need > info.free_gb) { b.disabled = true; b.title = `Needs ${need} GB, ${info.free_gb} GB free` }
+    }
+    if (info.busy || ['download', 'preparing'].includes(info.job.phase)) show(info.job)
+  }
+
+  function gb(b) { return (b / 1e9).toFixed(2) }
+
+  function show(j) {
+    $('choices').style.display = 'none'
+    $('progress').style.display = 'block'
+    const bar = $('bar')
+    $('job-error').textContent = j.error || ''
+    $('pause').style.display = j.phase === 'download' ? '' : 'none'
+    $('open').style.display = j.phase === 'done' ? '' : 'none'
+    $('back').style.display = ['stopped', 'error'].includes(j.phase) ? '' : 'none'
+    if (j.phase === 'download') {
+      const pct = j.total ? Math.floor(100 * j.done / j.total) : 0
+      $('phase').textContent = 'Downloading the maps'
+      bar.classList.remove('indeterminate'); bar.firstElementChild.style.width = pct + '%'
+      $('amount').textContent = `${gb(j.done)} of ${gb(j.total)} GB`
+      $('percent').textContent = pct + ' %'
+      $('file').textContent = j.file ? `file ${j.index} of ${j.count}: ${j.file}` : ''
+    } else if (j.phase === 'preparing') {
+      $('phase').textContent = 'Preparing the maps (a few minutes, only the first time)'
+      bar.classList.add('indeterminate')
+      $('amount').textContent = 'Reading the temperature and surface maps into fast caches'
+      $('percent').textContent = ''; $('file').textContent = j.file || ''
+    } else if (j.phase === 'done') {
+      $('phase').textContent = 'Ready'
+      bar.classList.remove('indeterminate'); bar.firstElementChild.style.width = '100%'
+      $('amount').textContent = 'The maps are ready.'; $('percent').textContent = ''; $('file').textContent = ''
+    } else if (j.phase === 'stopped') {
+      $('phase').textContent = 'Paused'
+      bar.classList.remove('indeterminate')
+      $('amount').textContent = 'The download resumes from here next time you choose it.'; $('percent').textContent = ''
+    } else if (j.phase === 'error') {
+      $('phase').textContent = 'Something went wrong'
+      bar.classList.remove('indeterminate')
+      $('amount').textContent = 'Check the internet connection and try again: the download resumes where it stopped.'
+    }
+  }
+
+  function poll() {
+    clearInterval(timer)
+    timer = setInterval(async () => {
+      const s = await fetch('/setup/api/state').then((r) => r.json())
+      show(s.job)
+      if (!s.busy && !['download', 'preparing'].includes(s.job.phase)) clearInterval(timer)
+    }, 700)
+  }
+
+  function maybeRestart(r) {
+    if (r && r.restart) {
+      $('choices').style.display = 'none'; $('progress').style.display = 'block'
+      $('phase').textContent = 'Restarting with the new folder…'; $('pause').style.display = 'none'
+      return true
+    }
+    return false
+  }
+
+  $('pick').onclick = async () => {
+    $('choice-error').textContent = ''
+    const path = await window.pywebview.api.choose_folder()
+    if (!path) return
+    const r = await post('check-folder', { path })
+    if (!r.ok) { $('folder-result').innerHTML = `<p class="error">${r.error}</p>`; $('use-folder').style.display = 'none'; return }
+    folder = path
+    const tag = (s, name) => `<span class="tag ${s.complete ? 'ok' : 'no'}">${name}: ${s.complete ? 'complete' : s.present + ' of ' + s.count}</span>`
+    $('folder-result').innerHTML = `<p class="found"><code>${r.maps_dir}</code><br>${tag(r.sets.base, 'Base')}${tag(r.sets.complete, 'Complete')}</p>`
+    $('use-folder').style.display = ''
+  }
+  $('use-folder').onclick = async () => {
+    const r = await post('use-folder', { path: folder })
+    if (maybeRestart(r)) return
+    if (r.ok) { show({ phase: 'preparing' }); poll() }
+  }
+  for (const b of document.querySelectorAll('button[data-set]')) {
+    b.onclick = async () => {
+      const r = await post('download', { set: b.dataset.set })
+      if (maybeRestart(r)) return
+      if (r.ok) { show({ phase: 'download', done: 0, total: 0 }); poll() }
+    }
+  }
+  $('none').onclick = async () => { const r = await post('no-maps'); if (r.ok) location.href = '/' }
+  $('pause').onclick = () => post('cancel')
+  $('open').onclick = () => { location.href = '/' }
+  $('back').onclick = () => { $('progress').style.display = 'none'; $('choices').style.display = 'block'; refresh() }
+  refresh()
+</script>
+</body>
+</html>

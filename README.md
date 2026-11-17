@@ -121,7 +121,39 @@ The full explanation, chapter by chapter, is in **[How it works (PDF)](docs/BOPE
 
 Item by item, with the open checks: [`docs/validation/navigator-audit.md`](docs/validation/navigator-audit.md).
 
-## Run it
+## Download the Windows app
+
+The whole navigator, analysis server included, as one Windows program: no Python, Node or terminal needed.
+
+1. Download **`LunarNavigator.exe`** (about 230 MB) from the **[latest release](https://github.com/Gabri275/BOPE-lunar-navigator/releases/latest)**.
+2. Double-click it. The program is not code-signed, so the first time Windows shows *"Windows protected your PC"*: click **More info → Run anyway**.
+3. On the first start choose the **terrain maps**. The program opens on the navigator from then on; the choice can be changed at any time from the **Maps** menu.
+
+| First-start choice | Download | What you get |
+|---|---|---|
+| **Use maps I already have** | none | Point to a folder that holds the maps (for example `data/raw` of this repository): the full analysis, at once |
+| **Complete** | 13.7 GB | The full analysis: real terrain everywhere, 5 m terrain around the south pole, surface temperature, rock abundance, thermal inertia |
+| **Base** | 3.1 GB | Real terrain skyline everywhere, slope and altitude, NASA's polar visibility and shadow maps. No temperature, rock or H-parameter values, no 5 m terrain |
+| **Continue without maps** | none | Every place, every date and every view still work, with the horizon of a **smooth Moon**: no mountains or crater rims on the skyline, no slope or surface data. Near the poles the results are optimistic, because a ridge that would hide the Sun is not there |
+
+What each choice computes:
+
+| | No maps | Base | Complete |
+|---|:-:|:-:|:-:|
+| Sun and Earth for any place and date (JPL DE440), countdowns, surface view, comparison, score | ✓ | ✓ | ✓ |
+| Real terrain skyline (LOLA): sunsets and Earthsets behind ridges | smooth Moon | ✓ | ✓ |
+| Slope and altitude, the slope requirement | | ✓ | ✓ |
+| 5 m terrain within 10 km near the south pole | | | ✓ |
+| Surface temperature, rock abundance, H-parameter and their requirements | | | ✓ |
+
+The map layers on the globe and the 2D map are inside the program, so they show with every choice. The offline mode with only the 31 known sites (precomputed, landings at 00:00 UTC) is kept as a fallback, used only if the built-in server cannot start.
+
+- **Downloads** come straight from NASA's archives (PGDA, LOLA, PDS). They can be paused and resumed. Their speed is set by those servers: about 1 MB/s from the LOLA archive in our test, so Base can take about an hour and Complete several hours. After a download the program spends a few minutes, once, preparing the temperature and surface maps.
+- **Files** live in `%LOCALAPPDATA%\BOPE Lunar Navigator`: `settings.json`, the downloaded `maps\` and `app.log`. To remove the program, delete the `.exe` and that folder.
+- **Requirements**: Windows 10 or 11, 64-bit, with Microsoft Edge WebView2 (already part of Windows 10 and 11). Mac and Linux: run it from source, below.
+- **Build it yourself**: `desktop/build.py` (instructions at the top of the file) makes the same `.exe` from this repository.
+
+## Run it from source
 
 **Front end** (Node 20+), offline data for the 31 known sites:
 
@@ -136,13 +168,16 @@ npm run dev            # http://localhost:5173
 ```bash
 python -m venv .venv && .venv/bin/python -m pip install -r analysis/requirements.txt
 .venv/bin/python -m analysis.download_kernels     # 45 MB of SPICE kernels from NASA NAIF
-.venv/bin/python -m analysis.download_maps        # optional, ~3 GB of LOLA maps for the real terrain
+.venv/bin/python -m analysis.download_maps        # optional: the Base maps, 3.1 GB (real terrain, slope, altitude)
+.venv/bin/python -m analysis.download_maps --all  # optional: the Complete maps, 13.7 GB (adds 5 m pole, temperature, rocks, H)
 .venv/bin/python -m uvicorn analysis.api:app --port 8000
 ```
 
+`download_maps --check` lists what is present; downloads resume where they stopped. Without maps the server uses a smooth-Moon horizon (see the table above).
+
 Or, with [uv](https://docs.astral.sh/uv/), `npm run api` from `frontend/`. The page switches to **Live** as soon as the server answers; interactive API docs at `http://localhost:8000/docs`. On Windows use `.venv\Scripts\python.exe`.
 
-Tests: `npm test` in `frontend/` (273 tests), `python -m pytest analysis` (82 with all maps).
+Tests: `npm test` in `frontend/` (276 tests), `python -m pytest analysis` (83 with all maps).
 
 ## Repository
 
@@ -151,6 +186,7 @@ analysis/      physics: ephemeris, terrain skyline, visibility, metrics, scoring
 contracts/     JSON Schemas and API reference shared by both sides
 data/          SITES.md, MAPS.md; processed/ = precomputed files (raw maps are downloaded, not committed)
 frontend/      React + TypeScript + three.js navigator; src/docs/topics.ts = the help pages
+desktop/       the Windows app: app.py (window, local server, first-start maps page), build.py (makes the .exe)
 docs/          PARAMETERS.md (every value and formula), DECISIONS.md, validation/, LOG.md, TASKS.md
 ```
 

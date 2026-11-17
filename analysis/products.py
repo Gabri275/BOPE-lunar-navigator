@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import dataclasses
 import subprocess
+import sys
 from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 
@@ -26,7 +27,10 @@ def notes(terrain_used: bool) -> str:
 
 
 @lru_cache(maxsize=1)
+@lru_cache(maxsize=1)
 def _git_sha() -> str:
+    if getattr(sys, "frozen", False):   # desktop app: no git, and a console window must not flash on every request
+        return "desktop"
     try:
         return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=config.REPO, text=True).strip()
     except Exception:
@@ -143,9 +147,18 @@ def scene_doc(period_id: str, start: str, end: str, step_s: int) -> dict:
 
 
 def horizon_doc(site_id: str, lat: float, lon: float, obs_height_m: float) -> dict:
-    """Terrain skyline of a site: 720 azimuths (0.5 deg), horizon.schema.json."""
+    """Terrain skyline of a site: 720 azimuths (0.5 deg), horizon.schema.json.
+
+    Without the LOLA maps the skyline is the smooth-sphere horizon seen from the observer height (dem = null),
+    the same horizon every other endpoint then uses, so the surface view still works."""
     if not horizon.terrain_available():
-        raise FileNotFoundError("the LOLA maps are not on disk. Run: python -m analysis.download_maps (list in data/MAPS.md)")
+        az = np.arange(720) * 0.5
+        return {
+            **header("horizon.py"), "site_id": site_id, "observer_height_m": obs_height_m, "dem": None,
+            "horizon_source": horizon.SMOOTH, "azimuth_deg": _r(az, 2),
+            "horizon_elev_deg": _r(horizon.horizon_deg(lat, lon, az, obs_height_m, use_terrain=False), 3),
+            "horizon_elev_uncertainty_deg": None,
+        }
     hz = terrain.horizon(lat, lon, obs_height_m)
     return {
         **header("terrain.py", True), "site_id": site_id, "observer_height_m": obs_height_m,

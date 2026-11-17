@@ -10,8 +10,12 @@
     "contract_version": true, "generated_at": true, "source": true,
     "site_id": { "$ref": "common.schema.json#/$defs/id" },
     "observer_height_m": { "type": "number", "minimum": 0, "description": "eye height above local terrain used for the mask" },
+    "horizon_source": {
+      "type": "string", "enum": ["lola-terrain", "smooth-sphere"],
+      "description": "OPTIONAL: smooth-sphere = no terrain maps on the server, the mask is the horizon of a smooth Moon"
+    },
     "dem": {
-      "type": "object",
+      "type": ["object", "null"], "description": "altitude maps used; null for the smooth-sphere horizon",
       "required": ["product", "resolution_m"],
       "properties": {
         "product": { "type": "string" },

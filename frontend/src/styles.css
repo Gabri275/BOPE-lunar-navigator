@@ -509,6 +509,7 @@ fieldset.requirements { margin-top: 0; }
 .surface-top h2 { margin: 0; font-size: 15px; font-weight: 600; font-stretch: 125%; letter-spacing: 0.14em; text-transform: uppercase; }
 .surface-where { color: var(--night-text-2); }
 .surface-hint { flex: 1; color: var(--night-text-2); font-size: 14px; }
+.surface-hint.smooth { color: var(--warn); }
 .surface-close {
   font: 500 15px var(--font); color: var(--night); background: var(--night-text); cursor: pointer;
   border: 1px solid var(--night-text); border-radius: 3px; padding: 5px 14px;

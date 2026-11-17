@@ -1,10 +1,12 @@
 # Lunar maps (LOLA / LROC) used by the analysis
 
-Owner: AERO. The files live in `data/raw/maps/` (git-ignored, about 6.6 GB). This page is the shared reference;
+Owner: AERO. The files live in `data/raw/maps/` (git-ignored, about 13.7 GB with every map). This page is the shared reference;
 it replaces the old `README.txt` that described a `backend/` layout.
 
 - Check what you have: `.venv/Scripts/python.exe -m analysis.download_maps --check`
-- Download what is missing: `.venv/Scripts/python.exe -m analysis.download_maps` (add `--all` for the 3.3 GB 5 m map)
+- Download what is missing: `.venv/Scripts/python.exe -m analysis.download_maps` for the Base set (3.1 GB: terrain, slope,
+  polar visibility and shadow maps), add `--all` for the Complete set (13.7 GB: also the 5 m map, the Diviner temperatures,
+  rock abundance and H-parameter, the 65° shadow maps). Downloads resume where they stopped. The desktop app uses the same sets.
 - Paths, URLs and sizes in code: `analysis/config.py` (`MAPS`). Do not rename files: the code uses these names.
 
 ## Files (checked 2026-11-14: every file opens, georeferencing read from the file itself)
